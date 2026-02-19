@@ -8,7 +8,10 @@ import os
 import time
 import encryption_service
 import base64
-from test_heuristic_matcher import HeuristicMatcher # import heuristic class
+import logging
+from openai import OpenAI
+import google.genai as genai
+from tests.test_heuristic_matcher import HeuristicMatcher # import heuristic class (from testing frame)
 
 # Credit to Gemini for assistance with writing
 
@@ -90,31 +93,84 @@ class FormInteractionEngine:
         except: return ""
 
     def fill_form_from_profile(self, profile_data):
-
+        unknown_elements = []
         results = []
+
+        print(f"DEBUG: Starting fill for {len(self.found_elements)} elements...")
+
         for element_metadata in self.found_elements:
-            # fill the data on form where heuristic matcher says it should go
+            # 1. Check the Matcher
             backend_key = self.matcher.get_best_match(element_metadata)
+            print(f"DEBUG: Field '{element_metadata.get('id')}' matched to: {backend_key}")
 
-            # get the user data that matches the key determined by heuristics matcher
-            value_to_input = profile_data.get(backend_key)
+            if backend_key == 'unknown':
+                unknown_elements.append(element_metadata)
+            else:
+                value_to_input = profile_data.get(backend_key)
+                if value_to_input:
+                    print(f"DEBUG: Heuristic Match found! Filling {backend_key}...")
+                    res = self.execute_fill(value_to_input, element_metadata['id'], backend_key)
+                    results.append(res)
 
-            if value_to_input:
-                try:
-                    wait = WebDriverWait(self.driver, 10)
-                    target = wait.until(EC.element_to_be_clickable((By.ID, element_metadata['id'])))
-                    # Handle Dropdowns vs Text Inputs
-                    if target.tag_name == "select":
-                        Select(target).select_by_visible_text(str(value_to_input))
-                    else:
-                        target.clear()
-                        target.send_keys(str(value_to_input))
+        # 2. Check the AI Phase
+        if unknown_elements:
+            print(f"DEBUG: Sending {len(unknown_elements)} items to Gemini...")
+            try:
+                llm_results = self.ai_helper(unknown_elements, profile_data)
+                print(f"DEBUG: Gemini Response: {llm_results}")
 
-                    results.append({"field": backend_key, "status": "SUCCESS"})
-                except Exception as e:
-                    results.append({"field": backend_key, "status": "FAILED", "error": str(e)})
+                for field_id, value in llm_results.items():
+                    if value and value != "N/A":
+                        result = self.execute_fill(value, field_id, "AI_Mapping")
+                        results.append(result)
+            except Exception as e:
+                print(f"DEBUG: AI Phase CRASHED: {e}")
 
+        print(f"DEBUG: fill_form_from_profile returning {len(results)} results.")
         return results
+
+    def ai_helper(self, unknown_elements, profile_data):
+
+        client = genai.Client(api_key="AIzaSyAoXnu6g37UD5Ym4SJbyPWNFVCfaVIIGoo")
+
+        prompt = f"""Your goal is to assist in a job application process by matching the correct profile data to
+        a list of unknown elements. Return a JSON object where the keys are the 'id' of the field and the values are the corresponding
+        data from the candidate profile.
+
+        RULES:
+        1. For 'select' (dropdown) fields, you must choose exactly one string from the 'options' list provided.
+        2. If a field doesn't have an exact match in the profile, infer the most logical answer from the profile data.
+        3. Choose the 'options' string that best represents the candidate's background.
+        4. If it is impossible to determine an answer, return "N/A", except for dropdowns, then choose whichever makes the most sense.
+
+        FIELDS TO FILL: {unknown_elements}
+        PROFILE DATA: {profile_data}
+        """
+
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt,
+            config={
+                'response_mime_type': 'application/json' # make it actually make a JSON file
+            }
+        )
+        return json.loads(response.text)
+
+
+    def execute_fill(self, value_to_input, element_id, backend_key):
+        try:
+            wait = WebDriverWait(self.driver, 10)
+            target = wait.until(EC.element_to_be_clickable((By.ID, element_id)))
+            # Handle Dropdowns vs Text Inputs
+            if target.tag_name == "select":
+                Select(target).select_by_visible_text(str(value_to_input))
+            else:
+                target.clear()
+                target.send_keys(str(value_to_input))
+
+            return({"field": backend_key, "status": "SUCCESS"})
+        except Exception as e:
+            return({"field": backend_key, "status": "FAILED", "error": str(e)})
 
 
     def save_logs(self, results, filename="interaction_log.json"):
@@ -126,8 +182,9 @@ class FormInteractionEngine:
 def main():
     engine = FormInteractionEngine()
     template_id = "mackay_sposito"
-    base_url = f"http://127.0.0.1:8001/apply/{template_id}"
-    encrypted_profile = ''
+    base_url = f"https://the-internet.herokuapp.com/checkboxes"
+    encrypted_profile = 'backend/encrypted_profile.json'
+    #base_url = f"http://127.0.0.1:8001/apply/{template_id}"
 
     try:
         # open the encrypted user file
@@ -149,8 +206,15 @@ def main():
         engine.found_elements = []
         # use the webdriver to get the fields that need to be filled
         engine.get_fields()
-        # put that decrypted user data into the fields based on the matching field the heuristic matcher found
-        page_results = engine.fill_form_from_profile(decrypted_user_data)
+
+
+        print(f"DEBUG: Scanned the page. Found {len(engine.found_elements)} elements.")
+        for el in engine.found_elements:
+            print(f"  - Found {el['tag']} with ID: {el['id']}")
+
+        # put that decrypted user data into the fields
+        page_results = engine.fill_form_from_profile(decrypted_user_data['applicant_info'])
+        print(f"DEBUG: Interaction complete. Results count: {len(page_results)}")
 
         engine.save_logs({template_id: page_results}, "full_test_logs.json")
         time.sleep(2)
