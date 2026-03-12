@@ -514,7 +514,7 @@ def run(
     profile_data: Dict[str, Any],
     *,
     encrypted_path: Optional[str] = None,
-    headless: bool = False,
+    headless: bool = True,
     max_pages: int = 50,
     log_fn=None,
     log_path: Optional[Path] = None,
