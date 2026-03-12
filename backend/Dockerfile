@@ -5,6 +5,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy everything in the backend folder to the container
+COPY . .
+
 # Use empty template so no personal data is baked into the image
 COPY profile.json.template ./profile.json
 COPY resume_parser.py .
