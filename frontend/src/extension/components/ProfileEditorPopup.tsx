@@ -42,12 +42,13 @@ export function ProfileEditorPopup() {
     if (ok) setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
-  const _handleCreateProfile = async () => {
+// @ts-ignore: Unused for Alpha phase
+const _handleCreateProfile = async () => {
     const empty = JSON.parse(JSON.stringify(emptyUserProfile)) as UserProfile;
     setLocalProfile(empty);
     const ok = await saveProfile(empty);
     if (!ok) setSaveStatus('error');
-  };
+};
 
   const displayProfile = localProfile ?? profile;
 
