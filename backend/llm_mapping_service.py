@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
 import encryption_service
-from tests.test_heuristic_matcher import HeuristicMatcher
+from test_heuristic_matcher import HeuristicMatcher
 
 try:
     from openai import OpenAI
