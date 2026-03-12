@@ -35,7 +35,12 @@ class FormInteractionEngine:
     def __init__(self, headless: bool = False):
         opts = webdriver.ChromeOptions()
         if headless:
-            opts.add_argument("--headless")
+            opts.add_argument("--headless=new")           # Modern headless engine
+            opts.add_argument("--no-sandbox")             # Required for Linux containers
+            opts.add_argument("--disable-dev-shm-usage")  # Overcomes limited resource problems
+            opts.add_argument("--disable-gpu")            # Often necessary in Linux environments
+            opts.add_argument("--window-size=1920,1080")  # Ensures elements aren't "hidden" by responsive CSS
+
         opts.add_argument("--log-level=3")
         opts.add_experimental_option("excludeSwitches", ["enable-logging"])
         self.driver = webdriver.Chrome(options=opts)
