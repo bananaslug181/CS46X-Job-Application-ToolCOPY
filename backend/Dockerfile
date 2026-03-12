@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy EVERYTHING in the backend folder (api, runner, etc.)
-COPY . .
+COPY backend/ .
 
 # Ensure profile setup without baking in private data
 RUN if [ ! -f profile.json ]; then cp profile.json.template profile.json; fi
