@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import viteLogo from './assets/vite.svg' // Make sure vite.svg is actually in your assets folder!import './App.css'
 import { Link } from 'react-router-dom'
 
 function App() {
