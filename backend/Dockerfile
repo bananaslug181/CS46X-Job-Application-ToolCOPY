@@ -1,18 +1,28 @@
 FROM python:3.12-slim
 
+# 1. Install system dependencies and Google Chrome
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    unzip \
+    curl \
+    google-chrome-stable \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Install dependencies
+# 2. Install Python requirements
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy EVERYTHING in the backend folder (api, runner, etc.)
+# 3. Copy the backend code
 COPY backend/ .
 
-# Ensure profile setup without baking in private data
+# 4. Fallback for profile data
 RUN if [ ! -f profile.json ]; then cp profile.json.template profile.json; fi
 
 EXPOSE 8000
 
-# The Start Command (Pointing to Salim's main entry point)
+# 5. Start the server
 CMD ["uvicorn", "api.endpoints:app", "--host", "0.0.0.0", "--port", "8000"]
