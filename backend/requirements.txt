@@ -12,6 +12,10 @@ python-dotenv>=1.0.0
 pypdf>=4.0.0
 python-multipart>=0.0.6
 
+# selenium
+selenium>=4.15.0
+webdriver-manager>=4.0.1
+
 # Sample resume PDF generation
 reportlab>=4.0.0
 
