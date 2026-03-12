@@ -1,7 +1,7 @@
 import { ProfileData } from '../types/profile';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
+//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.NEXT_PUBLIC_API_URL;
 export const uploadResume = async (file: File): Promise<ProfileData> => {
   const formData = new FormData();
   formData.append('file', file);

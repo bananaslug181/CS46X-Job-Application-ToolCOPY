@@ -42,7 +42,7 @@ export function ProfileEditorPopup() {
     if (ok) setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
-  const handleCreateProfile = async () => {
+  const _handleCreateProfile = async () => {
     const empty = JSON.parse(JSON.stringify(emptyUserProfile)) as UserProfile;
     setLocalProfile(empty);
     const ok = await saveProfile(empty);
