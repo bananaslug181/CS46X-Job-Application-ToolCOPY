@@ -24,4 +24,4 @@ RUN if [ ! -f profile.json ]; then cp profile.json.template profile.json; fi
 EXPOSE 8000
 
 # 5. Start command
-CMD sh -c "uvicorn api.endpoints:app --host 0.0.0.0 --port ${PORT:-8000}"
+CMD uvicorn api.endpoints:app --host 0.0.0.0 --port ${PORT:-8000}
